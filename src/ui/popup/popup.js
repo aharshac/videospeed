@@ -1,3 +1,5 @@
+import browser from 'webextension-polyfill';
+
 // Message type constants
 const MessageTypes = {
   SET_SPEED: 'VSC_SET_SPEED',
@@ -12,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Settings button event listener
   document.querySelector('#config').addEventListener('click', () => {
-    chrome.runtime.openOptionsPage();
+    browser.runtime.openOptionsPage();
   });
 
   // Power button toggle event listener
@@ -23,22 +25,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Initialize enabled state
-  chrome.storage.sync.get({ enabled: true }, (storage) => {
+  browser.storage.sync.get({ enabled: true }).then((storage) => {
     toggleEnabledUI(storage.enabled);
   });
 
   function toggleEnabled(enabled, callback) {
-    chrome.storage.sync.set(
-      {
-        enabled: enabled,
-      },
-      () => {
-        toggleEnabledUI(enabled);
-        if (callback) {
-          callback(enabled);
-        }
+    browser.storage.sync.set({ enabled }).then(() => {
+      toggleEnabledUI(enabled);
+      if (callback) {
+        callback(enabled);
       }
-    );
+    });
   }
 
   function toggleEnabledUI(enabled) {
@@ -61,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load settings and initialize UI
   function loadSettingsAndInitialize() {
-    chrome.storage.sync.get(null, (storage) => {
+    browser.storage.sync.get(null).then((storage) => {
       // Find the step values from keyBindings
       let slowerStep = 0.1;
       let fasterStep = 0.1;
@@ -142,9 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setSpeed(speed) {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, {
+        browser.tabs.sendMessage(tabs[0].id, {
           type: MessageTypes.SET_SPEED,
           payload: { speed: speed },
         });
@@ -153,9 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function adjustSpeed(delta) {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, {
+        browser.tabs.sendMessage(tabs[0].id, {
           type: MessageTypes.ADJUST_SPEED,
           payload: { delta: delta },
         });

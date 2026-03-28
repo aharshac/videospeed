@@ -3,6 +3,8 @@
  * Handles script injection and message bridging between contexts
  */
 
+import browser from 'webextension-polyfill';
+
 /**
  * Inject a bundled script file into the page context
  * @param {string} scriptPath - Path to the bundled script file
@@ -11,7 +13,7 @@
 export async function injectScript(scriptPath) {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = chrome.runtime.getURL(scriptPath);
+    script.src = browser.runtime.getURL(scriptPath);
     script.onload = () => {
       script.remove();
       resolve();
@@ -59,7 +61,7 @@ export function setupMessageBridge() {
             return;
           }
           const clamped = Math.min(Math.max(data.speed, SPEED_MIN), SPEED_MAX);
-          chrome.storage.sync.set({ lastSpeed: clamped });
+          browser.storage.sync.set({ lastSpeed: clamped });
         } else {
           console.warn(`[VSC] Bridge: unrecognized page action "${action}"`);
         }
@@ -75,7 +77,7 @@ export function setupMessageBridge() {
   window.addEventListener('message', handlePageMessage);
 
   // Listen for messages from popup/background
-  function handleRuntimeMessage(request, sender, sendResponse) {
+  function handleRuntimeMessage(request) {
     window.dispatchEvent(
       new CustomEvent('VSC_MESSAGE', {
         detail: request
@@ -83,17 +85,18 @@ export function setupMessageBridge() {
     );
 
     if (request.action === 'get-status') {
-      const responseHandler = (event) => {
-        if (event.data?.source === 'vsc-page' && event.data?.action === 'status-response') {
-          window.removeEventListener('message', responseHandler);
-          sendResponse(event.data.data);
-        }
-      };
-      window.addEventListener('message', responseHandler);
-      return true;
+      return new Promise((resolve) => {
+        const responseHandler = (event) => {
+          if (event.data?.source === 'vsc-page' && event.data?.action === 'status-response') {
+            window.removeEventListener('message', responseHandler);
+            resolve(event.data.data);
+          }
+        };
+        window.addEventListener('message', responseHandler);
+      });
     }
   }
-  chrome.runtime.onMessage.addListener(handleRuntimeMessage);
+  browser.runtime.onMessage.addListener(handleRuntimeMessage);
 
   // Listen for storage changes from other extension contexts
   function handleStorageChanged(changes, namespace) {
@@ -109,7 +112,7 @@ export function setupMessageBridge() {
       }, '*');
     }
   }
-  chrome.storage.onChanged.addListener(handleStorageChanged);
+  browser.storage.onChanged.addListener(handleStorageChanged);
 
   return {
     /** Send a command to the page context via the same channel popup messages use. */
@@ -120,8 +123,8 @@ export function setupMessageBridge() {
     /** Remove all listeners (tests, extension unload). */
     cleanup() {
       window.removeEventListener('message', handlePageMessage);
-      chrome.runtime.onMessage.removeListener?.(handleRuntimeMessage);
-      chrome.storage.onChanged.removeListener?.(handleStorageChanged);
+      browser.runtime.onMessage.removeListener?.(handleRuntimeMessage);
+      browser.storage.onChanged.removeListener?.(handleStorageChanged);
     },
   };
 }

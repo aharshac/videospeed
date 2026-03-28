@@ -1,3 +1,5 @@
+import browser from 'webextension-polyfill';
+
 /**
  * Update extension icon based on enabled state
  * @param {boolean} enabled - Whether extension is enabled
@@ -5,7 +7,7 @@
 async function updateIcon(enabled) {
   try {
     const suffix = enabled ? '' : '_disabled';
-    await chrome.action.setIcon({
+    await browser.action.setIcon({
       path: {
         19: `assets/icons/icon19${suffix}.png`,
         38: `assets/icons/icon38${suffix}.png`,
@@ -23,7 +25,7 @@ async function updateIcon(enabled) {
  */
 async function initializeIcon() {
   try {
-    const storage = await chrome.storage.sync.get({ enabled: true });
+    const storage = await browser.storage.sync.get({ enabled: true });
     await updateIcon(storage.enabled);
   } catch (error) {
     console.error('Failed to initialize icon:', error);
@@ -61,7 +63,7 @@ async function migrateConfig() {
   ];
 
   try {
-    await chrome.storage.sync.remove(DEPRECATED_KEYS);
+    await browser.storage.sync.remove(DEPRECATED_KEYS);
     console.log('[VSC] Config migrated to current version');
   } catch (error) {
     console.error('[VSC] Config migration failed:', error);
@@ -92,11 +94,11 @@ import {
  *   3. Unmappable keyCodes — set code: null (already broken, user re-records)
  *   4. Ensure all 9 predefined actions exist (replaces ensureDisplayBinding)
  *
- * Single atomic chrome.storage.sync.set() call. Idempotent — safe to re-run.
+ * Single atomic browser.storage.sync.set() call. Idempotent — safe to re-run.
  */
 async function migrateKeyBindingsV2() {
   try {
-    const storage = await chrome.storage.sync.get(null);
+    const storage = await browser.storage.sync.get(null);
     const bindings = storage.keyBindings;
 
     // No bindings in storage → fresh install, v2 defaults applied directly
@@ -176,7 +178,7 @@ async function migrateKeyBindingsV2() {
     }
 
     // Single atomic write
-    await chrome.storage.sync.set({
+    await browser.storage.sync.set({
       keyBindings: migrated,
       schemaVersion: 2,
     });
@@ -192,7 +194,7 @@ async function migrateKeyBindingsV2() {
 /**
  * Listen for storage changes (extension enabled/disabled)
  */
-chrome.storage.onChanged.addListener((changes, namespace) => {
+browser.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'sync' && changes.enabled) {
     updateIcon(changes.enabled.newValue !== false);
   }
@@ -201,7 +203,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 /**
  * Initialize on install/update
  */
-chrome.runtime.onInstalled.addListener(async () => {
+browser.runtime.onInstalled.addListener(async () => {
   console.log('Video Speed Controller installed/updated');
   await migrateConfig();
   await migrateKeyBindingsV2();
@@ -211,7 +213,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 /**
  * Initialize on startup
  */
-chrome.runtime.onStartup.addListener(async () => {
+browser.runtime.onStartup.addListener(async () => {
   console.log('Video Speed Controller started');
   await initializeIcon();
 });
