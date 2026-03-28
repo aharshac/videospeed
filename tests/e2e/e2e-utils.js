@@ -21,7 +21,7 @@ export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * @returns {Promise<{browser: Browser, page: Page}>}
  */
 export async function launchChromeWithExtension() {
-  const extensionPath = join(__dirname, '../../dist');
+  const extensionPath = join(__dirname, '../../dist/chrome');
 
   console.log(`   📁 Loading extension from: ${extensionPath}`);
 

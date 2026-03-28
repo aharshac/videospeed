@@ -34,12 +34,13 @@ function validateExtension() {
   test('inject.css exists', existsSync(join(extensionRoot, 'src/styles/inject.css')));
   test('shadow.css exists', existsSync(join(extensionRoot, 'src/styles/shadow.css')));
 
-  // Check bundled files
-  test('dist/content.js exists', existsSync(join(extensionRoot, 'dist/content.js')));
-  test('dist/inject.js exists', existsSync(join(extensionRoot, 'dist/inject.js')));
-  test('dist/background.js exists', existsSync(join(extensionRoot, 'dist/background.js')));
-  test('dist/popup.js exists', existsSync(join(extensionRoot, 'dist/popup.js')));
-  test('dist/options.js exists', existsSync(join(extensionRoot, 'dist/options.js')));
+  // Check bundled files (Chrome build)
+  test('dist/chrome/content.js exists', existsSync(join(extensionRoot, 'dist/chrome/content.js')));
+  test('dist/chrome/inject.js exists', existsSync(join(extensionRoot, 'dist/chrome/inject.js')));
+  test(
+    'dist/chrome/background.js exists',
+    existsSync(join(extensionRoot, 'dist/chrome/background.js'))
+  );
 
   // Check source structure (still needed for unit tests)
   test('src/content/inject.js exists', existsSync(join(extensionRoot, 'src/content/inject.js')));
@@ -62,9 +63,9 @@ function validateExtension() {
       'Content scripts defined',
       manifest.content_scripts && manifest.content_scripts.length > 0
     );
-    test('Content script uses bundled file',
-      manifest.content_scripts[0].js &&
-      manifest.content_scripts[0].js[0] === 'dist/content.js'
+    test(
+      'Content script uses bundled file',
+      manifest.content_scripts[0].js && manifest.content_scripts[0].js[0] === 'content.js'
     );
     test(
       'Required permissions present',
@@ -73,7 +74,7 @@ function validateExtension() {
     test(
       'Content script matches all sites',
       manifest.content_scripts[0].matches &&
-      manifest.content_scripts[0].matches.includes('https://*/*')
+        manifest.content_scripts[0].matches.includes('https://*/*')
     );
   } catch (error) {
     test('Manifest.json is valid JSON', false, error.message);
