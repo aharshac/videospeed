@@ -34,8 +34,8 @@
     ]
   },
   "devDependencies": {
-    "archiver": "^7.0.1",
     "@eslint/js": "^10.0.1",
+    "archiver": "^7.0.1",
     "esbuild": "^0.27.4",
     "eslint": "^10.1.0",
     "fs-extra": "^11.2.0",
@@ -56,5 +56,8 @@
     "tabWidth": 2,
     "trailingComma": "es5",
     "printWidth": 100
+  },
+  "dependencies": {
+    "webextension-polyfill": "^0.12.0"
   }
 }
