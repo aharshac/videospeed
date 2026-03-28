@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs --watch",
-    "prebuild": "rm -rf dist",
+    "prebuild": "rimraf dist",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit/",
     "test:integration": "vitest run tests/integration/",
@@ -21,7 +21,7 @@
     "prerelease": "npm run clean && npm test",
     "release": "npm run build:release && node scripts/package-release.js",
     "release:github": "node scripts/github-release.js",
-    "clean": "rm -rf dist release",
+    "clean": "rimraf dist release",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -34,8 +34,8 @@
     ]
   },
   "devDependencies": {
-    "archiver": "^7.0.1",
     "@eslint/js": "^10.0.1",
+    "archiver": "^7.0.1",
     "esbuild": "^0.27.4",
     "eslint": "^10.1.0",
     "fs-extra": "^11.2.0",
@@ -45,6 +45,7 @@
     "lint-staged": "^16.4.0",
     "prettier": "^3.1.0",
     "puppeteer": "^24.10.2",
+    "rimraf": "^6.1.3",
     "vitest": "^4.1.1"
   },
   "engines": {
