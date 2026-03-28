@@ -1,15 +1,17 @@
 # The science of accelerated playback
 
 | Chrome Extension                                                       | Downloads                                                                        | GitHub Release                                                 |
-|------------------------------------------------------------------------|----------------------------------------------------------------------------------|----------------------------------------------------------------|
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | [![Chrome Web Store][chrome-web-store-version]][chrome-web-store-link] | [![Chrome Web Store Users][chrome-web-store-users-badge]][chrome-web-store-link] | [![GitHub release][github-release-badge]][github-release-link] |
 
 <!-- Badges -->
+
 [chrome-web-store-version]: https://img.shields.io/chrome-web-store/v/nffaoalbilbmmfgbnbgppjihopabppdk?label=Chrome%20Web%20Store
 [chrome-web-store-users-badge]: https://img.shields.io/chrome-web-store/users/nffaoalbilbmmfgbnbgppjihopabppdk
 [github-release-badge]: https://img.shields.io/github/v/release/igrigorik/videospeed
 
 <!-- Links -->
+
 [chrome-web-store-link]: https://chrome.google.com/webstore/detail/poe2-trade-butler/nffaoalbilbmmfgbnbgppjihopabppdk
 [github-release-link]: https://github.com/igrigorik/videospeed/releases
 
@@ -42,7 +44,19 @@ last point to listen to it a few more times.
 
 ![Player](https://cloud.githubusercontent.com/assets/2400185/24076745/5723e6ae-0c41-11e7-820c-1d8e814a2888.png)
 
-### _[Install Chrome Extension](https://chrome.google.com/webstore/detail/video-speed-controller/nffaoalbilbmmfgbnbgppjihopabppdk)_
+## Install
+
+### Chrome / Edge / Brave
+
+Install from the [Chrome Web Store](https://chrome.google.com/webstore/detail/video-speed-controller/nffaoalbilbmmfgbnbgppjihopabppdk).
+
+### Firefox
+
+Install from [GitHub Releases](https://github.com/igrigorik/videospeed/releases) — download the `videospeed-firefox-*.zip` file, then:
+
+1. Open `about:debugging#/runtime/this-firefox`
+2. Click "Load Temporary Add-on…"
+3. Select the downloaded `.zip` file
 
 \*\* Once the extension is installed simply navigate to any page that offers
 HTML5 video ([example](http://www.youtube.com/watch?v=E9FxNzv1Tr8)), and you'll
@@ -87,14 +101,27 @@ You can try manually disabling Flash plugin in Chrome:
 - Disable "Allow sites to run Flash"
 - Restart your browser and try playing your video again
 
-**The speed controls are not showing up for local videos?** To enable playback
-of local media (e.g. File > Open File), you need to grant additional permissions
-to the extension.
+**The speed controls are not showing up for local videos?**
+
+**Chrome:** To enable playback of local media (e.g. File > Open File), you need
+to grant additional permissions to the extension.
 
 - In a new tab, navigate to `chrome://extensions`
 - Find "Video Speed Controller" extension in the list and enable "Allow access
   to file URLs"
 - Open a new tab and try opening a local file; the controls should show up.
+
+**Firefox:** The extension already supports `file://` URLs. Open a local file
+with `File > Open File` and the speed controls should appear automatically.
+
+### Browser Compatibility
+
+| Browser | Minimum Version | Manifest |
+| ------- | --------------- | -------- |
+| Chrome  | 89+             | MV3      |
+| Edge    | 89+             | MV3      |
+| Brave   | 89+             | MV3      |
+| Firefox | 109+            | MV3      |
 
 ### License
 

@@ -24,6 +24,7 @@ jobs:
       - run: npm ci
         env:
           PUPPETEER_SKIP_DOWNLOAD: '1'
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm run build:release
@@ -33,6 +34,13 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: videospeed-release-node-${{ matrix.node-version }}
-          path: release/videospeed-*.zip
+          name: videospeed-chrome-release-node-${{ matrix.node-version }}
+          path: release/videospeed-chrome-*.zip
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: videospeed-firefox-release-node-${{ matrix.node-version }}
+          path: release/videospeed-firefox-*.zip
           retention-days: 7
