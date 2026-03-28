@@ -11,7 +11,7 @@
     "dev": "node scripts/build.mjs --browser=chrome --watch",
     "dev:chrome": "node scripts/build.mjs --browser=chrome --watch",
     "dev:firefox": "node scripts/build.mjs --browser=firefox --watch",
-    "prebuild": "rm -rf dist",
+    "prebuild": "node scripts/clean.mjs dist",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit/",
     "test:integration": "vitest run tests/integration/",
@@ -29,7 +29,7 @@
     "prerelease": "npm run clean && npm test",
     "release": "npm run build:release && node scripts/package-release.js",
     "release:github": "node scripts/github-release.js",
-    "clean": "rm -rf dist release",
+    "clean": "node scripts/clean.mjs dist release",
     "prepare": "husky"
   },
   "lint-staged": {
