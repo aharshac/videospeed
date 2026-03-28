@@ -41,7 +41,8 @@ async function runE2ETests() {
   let totalFailed = 0;
 
   // Determine which tests to run based on command line argument
-  const testType = process.argv.find((a) => a !== '--firefox' && process.argv.indexOf(a) >= 2);
+  const nonFlagArgs = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+  const testType = nonFlagArgs[0];
   let testFiles;
 
   if (isFirefox) {

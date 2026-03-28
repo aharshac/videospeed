@@ -19,7 +19,7 @@ export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Launch Firefox with extension loaded as a temporary add-on
- * @returns {Promise<{browser: Browser, context: BrowserContext, page: Page}>}
+ * @returns {Promise<{context: BrowserContext, page: Page}>}
  */
 export async function launchFirefoxWithExtension() {
   const extensionPath = join(__dirname, '../../../dist/firefox');
@@ -28,7 +28,7 @@ export async function launchFirefoxWithExtension() {
 
   try {
     const context = await firefox.launchPersistentContext('', {
-      headless: false, // Extensions require non-headless mode in Firefox
+      headless: false, // Non-headless for easier local debugging; set true for CI
       args: [],
       firefoxUserPrefs: {
         // Allow unsigned extensions for testing
@@ -69,7 +69,7 @@ export async function launchFirefoxWithExtension() {
     // Store console errors on the page object for access
     page.getConsoleErrors = () => consoleErrors;
 
-    return { browser: null, context, page };
+    return { context, page };
   } catch (error) {
     console.log(`   ❌ Failed to launch Firefox: ${error.message}`);
     throw error;
@@ -94,7 +94,7 @@ export async function waitForExtension(page, timeout = 15000) {
         const hasVideoController = !!document.querySelector('video')?.vsc;
         return hasVSC || hasVSCController || hasController || hasVideoController;
       },
-      { timeout, polling: 1000 }
+      { timeout }
     );
 
     console.log('   ✅ Extension detected');
