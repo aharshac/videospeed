@@ -12,8 +12,8 @@ const pkg = require(path.join(rootDir, 'package.json'));
 const version = pkg.version;
 const tag = `v${version}`;
 const releaseDir = path.join(rootDir, 'release');
-const zipName = `videospeed-${version}.zip`;
-const zipPath = path.join(releaseDir, zipName);
+
+const BROWSERS = ['chrome', 'firefox'];
 
 function run(cmd) {
   return execSync(cmd, { encoding: 'utf-8', cwd: rootDir }).trim();
@@ -41,12 +41,18 @@ async function createRelease() {
     check('GitHub auth', false, 'gh is not authenticated. Run "gh auth login".');
   }
 
-  // Verify release zip exists
-  check(
-    'Release zip',
-    await fs.pathExists(zipPath),
-    `${zipName} not found. Run "npm run release" first.`
-  );
+  // Verify release zips exist for all browsers
+  const zipPaths = [];
+  for (const browser of BROWSERS) {
+    const zipName = `videospeed-${browser}-${version}.zip`;
+    const zipPath = path.join(releaseDir, zipName);
+    check(
+      'Release zip',
+      await fs.pathExists(zipPath),
+      `${zipName} not found. Run "npm run release" first.`
+    );
+    zipPaths.push(zipPath);
+  }
 
   // Verify git tag exists
   try {
@@ -82,8 +88,9 @@ async function createRelease() {
   await fs.writeFile(notesFile, notes);
 
   try {
+    const zipArgs = zipPaths.join(' ');
     const result = run(
-      `gh release create ${tag} ${zipPath} --title "Video Speed Controller ${tag}" --notes-file ${notesFile} --draft`
+      `gh release create ${tag} ${zipArgs} --title "Video Speed Controller ${tag}" --notes-file ${notesFile} --draft`
     );
     console.log(`✅ Draft release created: ${result}`);
     console.log('   Review and publish at the URL above.');

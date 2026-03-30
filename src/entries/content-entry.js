@@ -1,8 +1,9 @@
 /**
- * Content script entry point - handles Chrome API access and page injection
- * This runs in the content script context with access to chrome.* APIs
+ * Content script entry point - handles extension API access and page injection
+ * This runs in the content script context with access to browser.* APIs
  */
 
+import browser from 'webextension-polyfill';
 import { injectScript, setupMessageBridge } from '../content/injection-bridge.js';
 import { isBlacklisted } from '../utils/blacklist.js';
 import { matchSiteRule } from '../utils/site-pattern.js';
@@ -18,7 +19,7 @@ async function init() {
       return;
     }
 
-    const settings = await chrome.storage.sync.get(null);
+    const settings = await browser.storage.sync.get(null);
 
     // Early exit if extension is disabled
     if (settings.enabled === false) {
@@ -72,7 +73,7 @@ async function init() {
     // Lifecycle watcher: tear down or reinit when blacklist/enabled changes.
     // The content script is the lifecycle owner — it gates initialization above,
     // and it gates teardown/reinit here, using the same bridge the popup uses for commands.
-    chrome.storage.onChanged.addListener((changes, namespace) => {
+    browser.storage.onChanged.addListener((changes, namespace) => {
       if (namespace !== 'sync') {
         return;
       }

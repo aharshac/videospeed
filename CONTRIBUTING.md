@@ -50,9 +50,6 @@ a POSIX shell. Windows users need:
    ```sh
     $ cd videospeed
     videospeed$ git checkout -b bugfix/1-fix-double-click
-    M   .github/workflows/chrome-store-upload.yaml
-    M   README.md
-    M   options.js
     Switched to a new branch 'bugfix/1-fix-double-click'
     videospeed$
    ```
@@ -68,35 +65,69 @@ a POSIX shell. Windows users need:
    > [prettier](https://prettier.io/). If it is not it may be autoformatted for
    > you or your pull request may be rejected.
 
-7. Next, open Chrome/Brave/Chromium and enable developer mode via
-   `Settings > Extensions > Manage Extensions` and toggle `Developer mode` in
-   the top-right corner.
-
-8. Install dependencies
+7. Install dependencies
 
    ```sh
    npm install
    ```
 
-9. Build the extension
+8. Build the extension
 
    ```sh
+   # Build for both Chrome and Firefox
    npm run build
+
+   # Build for Chrome only
+   npm run build:chrome
+
+   # Build for Firefox only
+   npm run build:firefox
+
+   # Watch mode (Chrome)
+   npm run dev:chrome
+
+   # Watch mode (Firefox)
+   npm run dev:firefox
    ```
 
-10. Click `Load unpacked` and select the `dist/` folder (the build output).
+   Build output goes to `dist/chrome/` and `dist/firefox/` respectively.
 
-11. Try out your changes, make sure they work as expected
+9. Load the extension in your browser:
 
-12. Commit and push your changes to github
+   **Chrome/Brave/Chromium:**
+   - Go to `chrome://extensions/`, enable "Developer mode"
+   - Click "Load unpacked" and select the `dist/chrome/` folder
+
+   **Firefox:**
+   - Go to `about:debugging#/runtime/this-firefox`
+   - Click "Load Temporary Add-on…"
+   - Select any file inside the `dist/firefox/` folder
+
+10. Try out your changes, make sure they work as expected
+
+11. Commit and push your changes to github
 
     ```sh
     git commit -m "Awesome description of some awesome changes."
     git push
     ```
 
-13. Open your branch up on the github website then click `New pull request` and
+12. Open your branch up on the github website then click `New pull request` and
     write up a description of your changes.
+
+## Architecture
+
+The extension uses a shared codebase for Chrome and Firefox, with
+[webextension-polyfill](https://github.com/nicedoc/webextension-polyfill)
+providing a unified `browser.*` API that works across both browsers.
+
+Key differences between browsers:
+
+- **Chrome**: Uses Manifest V3 with a `service_worker` background script
+- **Firefox**: Uses Manifest V3 with a `scripts` array background page
+
+The build system merges `manifest.json` (shared) with browser-specific overlays
+(`manifest.chrome.json` / `manifest.firefox.json`) to produce separate builds.
 
 ## Optional
 
