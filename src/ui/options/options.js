@@ -19,6 +19,73 @@ window.VSC = window.VSC || {};
 
 let keyBindings = [];
 
+/**
+ * Lightweight CSS syntax highlighter for the controller CSS editor.
+ * Returns HTML with spans wrapping comments, selectors, properties,
+ * values, and braces. Designed for the transparent-textarea overlay
+ * pattern — the textarea handles editing, this colors the <pre> behind it.
+ */
+function highlightCSS(text) {
+  const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Tokenize: pull out comments first, then process the rest
+  let result = '';
+  let pos = 0;
+
+  while (pos < escaped.length) {
+    // Comments
+    const commentStart = escaped.indexOf('/*', pos);
+    if (commentStart === pos) {
+      const commentEnd = escaped.indexOf('*/', pos + 2);
+      const end = commentEnd === -1 ? escaped.length : commentEnd + 2;
+      result += `<span class="css-comment">${escaped.slice(pos, end)}</span>`;
+      pos = end;
+      continue;
+    }
+
+    // Find next comment to know where to stop
+    const nextComment = commentStart === -1 ? escaped.length : commentStart;
+
+    // Process non-comment chunk
+    const chunk = escaped.slice(pos, nextComment);
+    result += chunk
+      // Braces
+      .replace(/([{}])/g, '<span class="css-brace">$1</span>')
+      // Properties (word-chars before colon, inside a block)
+      .replace(/([\w-]+)\s*(?=:)/g, '<span class="css-property">$1</span>')
+      // Values (after colon, before semicolon or closing brace)
+      .replace(/:\s*([^;{}]+)(;)/g, ': <span class="css-value">$1</span>$2')
+      // Selectors (text before opening brace, not already wrapped)
+      .replace(
+        /([^{}><\n][^{}<>]*?)(\s*<span class="css-brace">\{)/g,
+        '<span class="css-selector">$1</span>$2'
+      );
+
+    pos = nextComment;
+  }
+
+  return result;
+}
+
+/** Sync textarea content to the highlighted <pre> overlay */
+function updateCSSHighlight() {
+  const textarea = document.getElementById('controllerCSS');
+  const highlight = document.getElementById('cssHighlight');
+  if (textarea && highlight) {
+    highlight.innerHTML = `${highlightCSS(textarea.value)}\n`;
+  }
+}
+
+/** Sync scroll position between textarea and highlight overlay */
+function syncCSSScroll() {
+  const textarea = document.getElementById('controllerCSS');
+  const highlight = document.getElementById('cssHighlight');
+  if (textarea && highlight) {
+    highlight.scrollTop = textarea.scrollTop;
+    highlight.scrollLeft = textarea.scrollLeft;
+  }
+}
+
 // Action labels — shared by predefined and custom shortcut rows
 const ACTION_OPTIONS = [
   ['slower', 'Decrease speed'],
@@ -83,6 +150,15 @@ function findDroppedRules(css, parsedSheet) {
     }
   }
 
+  // Unclosed brace: the trailing chunk was never added to blocks
+  if (depth !== 0) {
+    const remainder = css.substring(start).trim();
+    if (remainder) {
+      const selector = remainder.split('{')[0].trim();
+      return [selector || remainder.slice(0, 40)];
+    }
+  }
+
   // If total block count matches parsed rule count, nothing was dropped
   if (blocks.length <= parsedSheet.cssRules.length) {
     return [];
@@ -99,7 +175,7 @@ function findDroppedRules(css, parsedSheet) {
         const selector = block.split('{')[0].trim();
         dropped.push(selector || block.slice(0, 40));
       }
-    } catch (e) {
+    } catch {
       const selector = block.split('{')[0].trim();
       dropped.push(selector || block.slice(0, 40));
     }
@@ -226,7 +302,7 @@ let layoutMap = null;
         layoutMap = await navigator.keyboard.getLayoutMap();
       });
     }
-  } catch (e) {
+  } catch {
     // getLayoutMap not available — fallback chain handles it
   }
 })();
@@ -586,7 +662,7 @@ function validate() {
           throw 'empty regex';
         }
         new RegExp(regex, flags);
-      } catch (err) {
+      } catch {
         status.textContent = `Error: Invalid site rule regex: "${rule.pattern}". Unable to save.`;
         status.classList.add('show', 'error');
         valid = false;
@@ -628,9 +704,8 @@ async function save_options() {
   }
 
   const status = document.getElementById('status');
-  status.textContent = 'Saving...';
-  status.classList.remove('success', 'error');
-  status.classList.add('show');
+  status.textContent = '';
+  status.classList.remove('show', 'success', 'error');
 
   try {
     keyBindings = [];
@@ -690,20 +765,14 @@ async function save_options() {
 
     const ok = await window.VSC.videoSpeedConfig.save(settingsToSave);
 
-    if (ok) {
-      status.textContent = 'Options saved';
-      status.classList.add('success');
-    } else {
+    if (!ok) {
       status.textContent = 'Error: failed to save options to storage';
-      status.classList.add('error');
-    }
-    setTimeout(
-      () => {
+      status.classList.add('show', 'error');
+      setTimeout(() => {
         status.textContent = '';
-        status.classList.remove('show', 'success', 'error');
-      },
-      ok ? 2000 : 3000
-    );
+        status.classList.remove('show', 'error');
+      }, 3000);
+    }
   } catch (error) {
     console.error('Failed to save options:', error);
     status.textContent = `Error saving options: ${error.message}`;
@@ -877,7 +946,7 @@ async function handleImportFile(event) {
     try {
       imported = JSON.parse(text);
     } catch (e) {
-      throw new Error('File is not valid JSON');
+      throw new Error('File is not valid JSON', { cause: e });
     }
 
     if (!imported || typeof imported !== 'object' || !Array.isArray(imported.keyBindings)) {
@@ -938,17 +1007,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await restore_options();
 
-  document.getElementById('save').addEventListener('click', async (e) => {
+  const saveBtn = document.getElementById('save');
+
+  // Dirty-state tracking: green button when unsaved changes exist,
+  // dimmed briefly after save to confirm the action landed.
+  function markDirty() {
+    saveBtn.classList.add('has-changes');
+    saveBtn.classList.remove('saved');
+  }
+  function markClean() {
+    saveBtn.classList.remove('has-changes');
+    saveBtn.classList.add('saved');
+    setTimeout(() => saveBtn.classList.remove('saved'), 1500);
+  }
+
+  // Catch all form changes via delegation (covers dynamic rows too)
+  document.body.addEventListener('input', markDirty);
+  document.body.addEventListener('change', markDirty);
+
+  saveBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     await save_options();
+    markClean();
   });
 
-  document.getElementById('add').addEventListener('click', () => add_shortcut());
-  document.getElementById('add-site-rule').addEventListener('click', () => add_site_rule());
+  document.getElementById('add').addEventListener('click', () => {
+    add_shortcut();
+    markDirty();
+  });
+  document.getElementById('add-site-rule').addEventListener('click', () => {
+    add_site_rule();
+    markDirty();
+  });
 
   document.getElementById('restore').addEventListener('click', async (e) => {
     e.preventDefault();
     await restore_defaults();
+    markDirty();
   });
 
   document.getElementById('export').addEventListener('click', (e) => {
@@ -982,22 +1077,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     splitMenu.hidden = true;
   });
 
-  // Live CSS validation as user types (debounced)
+  // CSS editor: live validation (debounced) + syntax highlighting + scroll sync
+  const cssTextarea = document.getElementById('controllerCSS');
   let cssValidationTimer;
-  document.getElementById('controllerCSS').addEventListener('input', () => {
+  cssTextarea.addEventListener('input', () => {
+    updateCSSHighlight();
     clearTimeout(cssValidationTimer);
     cssValidationTimer = setTimeout(() => {
-      validateControllerCSS(document.getElementById('controllerCSS').value);
+      validateControllerCSS(cssTextarea.value);
     }, 300);
   });
+  cssTextarea.addEventListener('scroll', syncCSSScroll);
 
-  // Validate on initial load
-  validateControllerCSS(document.getElementById('controllerCSS').value);
+  // Initial highlight + validation
+  updateCSSHighlight();
+  validateControllerCSS(cssTextarea.value);
 
   document.getElementById('resetCSS').addEventListener('click', (e) => {
     e.preventDefault();
     document.getElementById('controllerCSS').value = window.VSC.Constants.DEFAULT_CONTROLLER_CSS;
+    updateCSSHighlight();
     validateControllerCSS(window.VSC.Constants.DEFAULT_CONTROLLER_CSS);
+    markDirty();
   });
 
   // About and feedback button event listeners
@@ -1031,6 +1132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('click', (event) => {
     eventCaller(event, 'removeParent', () => {
       event.target.closest('.row').remove();
+      markDirty();
     });
   });
   document.addEventListener('change', (event) => {
