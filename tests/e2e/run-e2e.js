@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * E2E test runner for Video Speed Controller extension
- * Usage: node tests/e2e/run-e2e.js [youtube|basic|all] [--firefox]
+ * E2E test runner for Video Speed Controller Chrome Extension
+ * Usage: node tests/e2e/run-e2e.js [youtube|basic|all]
  */
 
 import { pathToFileURL, fileURLToPath } from 'url';
@@ -12,68 +12,44 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const isFirefox = process.argv.includes('--firefox');
-const browserLabel = isFirefox ? 'Firefox' : 'Chrome';
-
-if (!isFirefox) {
-  // Check if Puppeteer is available (Chrome E2E)
-  try {
-    await import('puppeteer');
-  } catch {
-    console.error('❌ Puppeteer not found. Install it with: npm install puppeteer');
-    console.error('   Note: Puppeteer will download a Chrome binary (~170MB)');
-    process.exit(1);
-  }
-} else {
-  // Check if Playwright is available (Firefox E2E)
-  try {
-    await import('playwright');
-  } catch {
-    console.error('❌ Playwright not found. Install it with: npm install playwright');
-    process.exit(1);
-  }
+// Check if Puppeteer is available
+try {
+  await import('puppeteer');
+} catch {
+  console.error('❌ Puppeteer not found. Install it with: npm install puppeteer');
+  console.error('   Note: Puppeteer will download a Chrome binary (~170MB)');
+  process.exit(1);
 }
 
 async function runE2ETests() {
-  console.log(`🎭 Video Speed Controller - E2E Test Runner (${browserLabel})\n`);
+  console.log('🎭 Video Speed Controller - E2E Test Runner\n');
 
   let totalPassed = 0;
   let totalFailed = 0;
 
   // Determine which tests to run based on command line argument
-  const nonFlagArgs = process.argv.slice(2).filter((a) => !a.startsWith('--'));
-  const testType = nonFlagArgs[0];
+  const testType = process.argv[2];
   let testFiles;
 
-  if (isFirefox) {
-    // Firefox-specific test files
-    if (testType === 'basic') {
-      testFiles = ['firefox/basic.firefox.e2e.js'];
-    } else {
-      testFiles = ['firefox/basic.firefox.e2e.js'];
-    }
+  if (testType === 'youtube') {
+    testFiles = ['youtube.e2e.js'];
+  } else if (testType === 'basic') {
+    testFiles = ['basic.e2e.js'];
+  } else if (testType === 'settings') {
+    testFiles = ['settings-injection.e2e.js'];
+  } else if (testType === 'display') {
+    testFiles = ['display-toggle.e2e.js'];
   } else {
-    // Chrome test files
-    if (testType === 'youtube') {
-      testFiles = ['youtube.e2e.js'];
-    } else if (testType === 'basic') {
-      testFiles = ['basic.e2e.js'];
-    } else if (testType === 'settings') {
-      testFiles = ['settings-injection.e2e.js'];
-    } else if (testType === 'display') {
-      testFiles = ['display-toggle.e2e.js'];
-    } else {
-      // Run all Chrome tests
-      testFiles = [
-        'basic.e2e.js',
-        'youtube.e2e.js',
-        'settings-injection.e2e.js',
-        'display-toggle.e2e.js',
-      ];
-    }
+    // Run all tests
+    testFiles = [
+      'basic.e2e.js',
+      'youtube.e2e.js',
+      'settings-injection.e2e.js',
+      'display-toggle.e2e.js',
+    ];
   }
 
-  console.log(`Running ${testFiles.length} E2E test suite(s) on ${browserLabel}...\n`);
+  console.log(`Running ${testFiles.length} E2E test suite(s)...\n`);
 
   for (const testFile of testFiles) {
     try {
@@ -106,7 +82,7 @@ async function runE2ETests() {
     }
   }
 
-  console.log(`📊 E2E Test Summary (${browserLabel})`);
+  console.log('📊 E2E Test Summary');
   console.log('===================');
   console.log(`Total Tests: ${totalPassed + totalFailed}`);
   console.log(`✅ Passed: ${totalPassed}`);

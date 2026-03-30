@@ -23,20 +23,17 @@ export const chromeMock = {
   storage: {
     sync: {
       get: (keys, callback) => {
-        const result =
-          typeof keys === 'object' && keys !== null
-            ? Object.keys(keys).reduce((acc, key) => {
-                acc[key] = mockStorage[key] !== undefined ? mockStorage[key] : keys[key];
-                return acc;
-              }, {})
-            : { ...mockStorage };
-
-        // Support both callback (chrome.*) and Promise (browser.*) calling conventions
-        if (typeof callback === 'function') {
-          setTimeout(() => callback(result), 10);
-        } else {
-          return new Promise((resolve) => setTimeout(() => resolve(result), 10));
-        }
+        // Simulate async behavior
+        setTimeout(() => {
+          const result =
+            typeof keys === 'object' && keys !== null
+              ? Object.keys(keys).reduce((acc, key) => {
+                  acc[key] = mockStorage[key] !== undefined ? mockStorage[key] : keys[key];
+                  return acc;
+                }, {})
+              : { ...mockStorage };
+          callback(result);
+        }, 10);
       },
       set: (items, callback) => {
         // Build changes object BEFORE mutating storage (mirrors real chrome behavior)
@@ -54,32 +51,20 @@ export const chromeMock = {
           }
         }, 5);
 
-        if (typeof callback === 'function') {
-          setTimeout(() => {
-            if (globalThis.chrome) {
-              callback();
-            }
-          }, 10);
-        } else {
-          return new Promise((resolve) => setTimeout(resolve, 10));
-        }
+        setTimeout(() => {
+          if (globalThis.chrome && callback) {
+            callback();
+          }
+        }, 10);
       },
       remove: (keys, callback) => {
         const keysArray = Array.isArray(keys) ? keys : [keys];
         keysArray.forEach((key) => delete mockStorage[key]);
-        if (typeof callback === 'function') {
-          setTimeout(() => callback(), 10);
-        } else {
-          return new Promise((resolve) => setTimeout(resolve, 10));
-        }
+        setTimeout(() => callback && callback(), 10);
       },
       clear: (callback) => {
         Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
-        if (typeof callback === 'function') {
-          setTimeout(() => callback(), 10);
-        } else {
-          return new Promise((resolve) => setTimeout(resolve, 10));
-        }
+        setTimeout(() => callback && callback(), 10);
       },
     },
     onChanged: {
@@ -98,63 +83,38 @@ export const chromeMock = {
     getURL: (path) => `chrome-extension://test-extension/${path}`,
     id: 'test-extension-id',
     lastError: null,
-    openOptionsPage: () => Promise.resolve(),
     onMessage: {
       addListener: (_callback) => {
         // Mock message listener
       },
-      removeListener: (_callback) => {
-        // Mock message listener removal
-      },
-    },
-    onInstalled: {
-      addListener: (_callback) => {},
-    },
-    onStartup: {
-      addListener: (_callback) => {},
     },
   },
   tabs: {
     query: (queryInfo, callback) => {
-      const result = [
+      callback([
         {
           id: 1,
           active: true,
           url: 'https://www.youtube.com/watch?v=test',
         },
-      ];
-      if (typeof callback === 'function') {
-        callback(result);
-      } else {
-        return Promise.resolve(result);
-      }
+      ]);
     },
     sendMessage: (tabId, message, callback) => {
-      if (typeof callback === 'function') {
-        setTimeout(() => callback({}), 10);
-      } else {
-        return new Promise((resolve) => setTimeout(() => resolve({}), 10));
-      }
+      setTimeout(() => callback && callback({}), 10);
     },
   },
   action: {
     setIcon: (details, callback) => {
-      if (typeof callback === 'function') {
-        setTimeout(() => callback(), 10);
-      } else {
-        return new Promise((resolve) => setTimeout(resolve, 10));
-      }
+      setTimeout(() => callback && callback(), 10);
     },
   },
 };
 
 /**
  * Install Chrome API mock into global scope
- * Also installs as `browser` to match webextension-polyfill
  */
 export function installChromeMock() {
   globalThis.chrome = chromeMock;
-  globalThis.browser = chromeMock;
 }
 
 /**
@@ -162,7 +122,6 @@ export function installChromeMock() {
  */
 export function cleanupChromeMock() {
   delete globalThis.chrome;
-  delete globalThis.browser;
 }
 
 /**
